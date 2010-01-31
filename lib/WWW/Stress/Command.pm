@@ -42,16 +42,6 @@ has 'time_between_requests' => ( # in fractional seconds
     default     => 1,
 );
 
-has 'url' => (
-    isa      => 'Str',
-    is       => 'rw',
-    required => 1,
-);
-has 'expect' => (
-    isa         => 'Maybe[Str]',
-    is          => 'rw',
-);
-
 has 'user_agent' => (
     isa     => 'Str',
     is      => 'rw',
@@ -140,10 +130,7 @@ sub execute {
         my $response = $self->get_response;
 
         if ($response->is_error) {
-            warn sprintf "($id) ERROR %s (%d) %s\n", 
-                $response->message, 
-                $response->code,
-                $self->url;
+            $self->on_error($response, $id);
             $pm->finish(0); # failure
         } else {
             my $status = $self->process_response($id, $response);
@@ -168,10 +155,16 @@ sub execute {
     say $table->draw;
 }
 
+sub on_error {
+    my ($self, $response, $id) = @_;
+    warn sprintf "($id) ERROR %s (%d)\n", 
+        $response->message, 
+        $response->code;
+}
+
 sub get_response {
     my $self = shift;
-    my $ua = $self->_ua;
-    return $ua->get($self->url);
+    die "Abstract method get_response called";
 }
 
 sub process_response {
@@ -182,7 +175,7 @@ sub process_response {
 
     if (my $expect = $self->expect) {
         unless ($content_type eq $expect) {
-            warn "($id) ERROR!  Wrong content-type, expected $expect";
+            warn "($id) ERROR!  Wrong content-type, expected $expect, got $content_type";
             return 0;
         }
     }
