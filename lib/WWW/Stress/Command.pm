@@ -127,6 +127,7 @@ sub execute {
             sleep $self->time_between_requests;
             next;
             };
+        $self->setup;
         my $response = $self->get_response;
 
         if ($response->is_error) {
@@ -134,6 +135,7 @@ sub execute {
             $pm->finish(0); # failure
         } else {
             my $status = $self->process_response($id, $response);
+            $self->teardown($status);
             $pm->finish($status);
         }
     }
@@ -155,12 +157,17 @@ sub execute {
     say $table->draw;
 }
 
+sub setup    { warn "SETUP"    }
+sub teardown { warn "TEARDOWN" }
+
 sub on_error {
     my ($self, $response, $id) = @_;
     warn sprintf "($id) ERROR %s (%d)\n", 
         $response->message, 
         $response->code;
 }
+
+after on_error => sub { my $self = shift; $self->teardown(0) };
 
 sub get_response {
     my $self = shift;
