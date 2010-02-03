@@ -112,6 +112,11 @@ has table => (
     },
 );
 
+sub get_runner {
+    my ($self, $id) = shift;
+    return $self; # to be overridden, e.g. in ::table
+}
+
 sub execute {
     my ($self, $opt, $args) = @_;
 
@@ -123,19 +128,21 @@ sub execute {
     # see also run_on_wait
     
     for my $id (1.. $self->num_processes) {
+        my $runner = $self->get_runner;
         my $pid = $pm->start($id) and do {
             sleep $self->time_between_requests;
             next;
             };
-        $self->setup;
-        my $response = $self->get_response;
+        $runner->setup;
+        my $response = $runner->get_response;
 
         if ($response->is_error) {
-            $self->on_error($response, $id);
+            $runner->on_error($response, $id);
             $pm->finish(0); # failure
         } else {
-            my $status = $self->process_response($id, $response);
-            $self->teardown($status);
+            my $status = $runner->process_response($id, $response);
+
+            $runner->teardown($status);
             $pm->finish($status);
         }
     }

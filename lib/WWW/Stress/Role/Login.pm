@@ -34,8 +34,8 @@ sub form_field {
     return $self->form_fields->{$field} || $field;
 }
 
-before execute => sub {
-    my ($self, $opt, $args) = @_;
+before get_response => sub {
+    my ($self) = @_;
 
     my $ua = $self->_ua;
 
@@ -53,6 +53,7 @@ before execute => sub {
     unless (my $success = $self->check_login_success($form_response)) {
         die sprintf "Couldn't login as %s!", $self->username;
     }
+    warn sprintf "Logged in as %s", $self->username;
 };
 
 sub check_login_success {
