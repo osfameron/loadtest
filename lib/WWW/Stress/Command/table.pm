@@ -54,7 +54,11 @@ has 'runners' => (
             }
             %data = (%$self, %data);
             my $type = $data{type} || 'url';
-            WWW::Stress->plugin_for($type)->new(%data);
+            local $Data::Dumper::Maxdepth = 2;
+            local $Data::Dumper::Indent = 1;
+            WWW::Stress->plugin_for($type)->new_with_config(
+                %data
+                );
           } 2..$maxrow;
         \@runners;
     }
